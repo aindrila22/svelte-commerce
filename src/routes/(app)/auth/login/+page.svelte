@@ -14,6 +14,7 @@ import { LazyImg, Error } from '$lib/components'
 import { PrimaryButton } from '$lib/ui'
 import SEO from '$lib/components/SEO/index.svelte'
 import VerifyOtp from '../_VerifyOtp.svelte'
+import firebase from '../../../../firebase/firebaseConfig'
 const cookies = Cookie()
 
 const IS_DEV = import.meta.env.DEV
@@ -32,7 +33,7 @@ let isMobile = false
 let loading = false
 let maxlength = null
 let otpRequestSend = false
-let password = IS_DEV ? 'litekart' : ''
+let password = ''
 let phone = IS_DEV ? '8249028220' : ''
 let ref = $page?.url?.searchParams.get('ref')
 let resendAfter = 0
@@ -40,7 +41,7 @@ let selectedCountry = data.countries[0]
 let showDropDown = false
 let showPassword = false
 let type = 'password'
-let value = email ? email : IS_DEV ? 'hi@litekart.in' : null
+let value = null
 
 onMount(() => {
 	googleOneTap(
@@ -113,29 +114,34 @@ async function submit() {
 		try {
 			loading = true
 
-			const res = await UserService.loginService({
-				email: value,
-				password: password,
-				storeId: $page.data.store?.id,
-				origin: $page.data.origin
-			})
+			// const res = await UserService.loginService({
+			// 	email: value,
+			// 	password: password,
+			// 	storeId: $page.data.store?.id,
+			// 	origin: $page.data.origin
+			// })
 
-			const me = {
-				email: res.email,
-				phone: res.phone,
-				firstName: res.firstName,
-				lastName: res.lastName,
-				avatar: res.avatar,
-				role: res.role,
-				verified: res.verified,
-				active: res.active
-			}
+			// const me = {
+			// 	email: res.email,
+			// 	phone: res.phone,
+			// 	firstName: res.firstName,
+			// 	lastName: res.lastName,
+			// 	avatar: res.avatar,
+			// 	role: res.role,
+			// 	verified: res.verified,
+			// 	active: res.active
+			// }
 
-			await cookies.set('me', me, { path: '/' })
+			//await cookies.set('me', me, { path: '/' })
 			// $page.data.me = me
-			await invalidateAll()
-			let r = ref || '/'
-			if (browser) goto(r)
+
+			const response = await firebase.auth().signInWithEmailAndPassword(value, password)
+
+			if (response.user) {
+				await invalidateAll()
+				let r = ref || '/'
+				if (browser) goto(r)
+			}
 		} catch (e) {
 			toast(e.body, 'error')
 			err = e?.body || e
@@ -153,8 +159,8 @@ async function handleSendOTP({ detail }) {
 
 		const res = await UserService.getOtpService({
 			phone,
-			storeId: data.store?.id,
-			origin: data.origin
+			storeId: data.store?.id
+			//origin: data.origin
 		})
 
 		resendAfter = res?.timer
@@ -177,8 +183,8 @@ async function handleVerifyOtp({ detail }) {
 		const res = await UserService.verifyOtpService({
 			phone,
 			otp,
-			storeId: data.store?.id,
-			origin: data.origin
+			storeId: data.store?.id
+			//origin: data.origin
 		})
 
 		const me = {

@@ -12,6 +12,7 @@ import LazyImg from '$lib/components/Image/LazyImg.svelte'
 import PrimaryButton from '$lib/ui/PrimaryButton.svelte'
 import SEO from '$lib/components/SEO/index.svelte'
 import TextboxFloating from '$lib/ui/TextboxFloating.svelte'
+import firebase from "../../../../firebase/firebaseConfig"
 const IS_DEV = import.meta.env.DEV
 
 const cookies = Cookie()
@@ -25,11 +26,11 @@ let ref = $page?.url?.searchParams.get('ref')
 let role = $page?.url?.searchParams.get('role') || 'admin'
 let store = $page?.url?.searchParams.get('store') || undefined
 let newResistration = {
-	firstName: IS_DEV ? 'Swadesh' : '',
-	lastName: IS_DEV ? 'Behera' : '',
-	email: IS_DEV ? 'hi@litekart.in' : '',
-	password: IS_DEV ? 'litekart' : '',
-	passwordConfirmation: IS_DEV ? 'litekart' : ''
+	firstName:  '',
+	lastName:  '',
+	email:  '',
+	password: '',
+	passwordConfirmation: ''
 }
 let loading = false
 let showPassword = false
@@ -71,37 +72,56 @@ async function submit(n) {
 		loading = true
 		const { firstName, lastName, phone, email, password, passwordConfirmation } = n
 
-		const res = await UserService.signupService({
-			firstName: firstName,
-			lastName: lastName,
-			phone: phone,
-			email: email,
-			password: password,
-			passwordConfirmation: passwordConfirmation,
-			role: role,
-			storeId: $page.data.store.id,
-			origin: $page.data.origin
-		})
+		const response = await firebase.auth().createUserWithEmailAndPassword(email, password);
 
-		const me = {
-			id: res._id,
-			email: res.email,
-			phone: res.phone,
-			firstName: res.firstName,
-			lastName: res.lastName,
-			avatar: res.avatar,
-			role: res.role,
-			verified: res.verified,
-			active: res.active,
-			store: res.store
-		}
+		// const res = await UserService.signupService({
+		// 	firstName: firstName,
+		// 	lastName: lastName,
+		// 	phone: phone,
+		// 	email: email,
+		// 	password: password,
+		// 	passwordConfirmation: passwordConfirmation,
+		// 	role: role,
+		// 	storeId: $page.data.store.id,
+		// 	origin: $page.data.origin
+		// })
 
-		await cookies.set('me', me, { path: '/' })
+		// const me = {
+		// 	id: res._id,
+		// 	email: res.email,
+		// 	phone: res.phone,
+		// 	firstName: res.firstName,
+		// 	lastName: res.lastName,
+		// 	avatar: res.avatar,
+		// 	role: res.role,
+		// 	verified: res.verified,
+		// 	active: res.active,
+		// 	store: res.store
+		// }
+      if (response.user) {
+        await response.user.updateProfile({
+          displayName: firstName
+        });
+      
+        const uid = response.user.uid; // Get the UID of the created user
+      
+        const userRef = firebase.database().ref('users/' + uid);
+        const userDataSnapshot = await userRef.get();
+        const userDataValue = userDataSnapshot.val();
+        const points = (userDataValue && userDataValue.points) || 0;
+        await userRef.set({
+          uid: uid, // Pass the UID in the database
+          email: email,
+          username: firstName,
+          points: points + 0
+        });
+
+		//await cookies.set('me', me, { path: '/' })
 		// $page.data.me = me
 		await invalidateAll()
 
-		if (browser) goto('/')
-	} catch (e) {
+		if (browser) goto('/auth/login')
+	} }catch (e) {
 		toast(e, 'error')
 		err = e
 	} finally {

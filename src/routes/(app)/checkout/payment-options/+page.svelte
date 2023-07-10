@@ -128,6 +128,30 @@ async function submit(pm) {
 						goto(`/payment/failure?ref=/checkout/payment-options?address=${data.addressId}`)
 					} finally {
 					}
+
+					//     fetch("https://pocketmon-stripe-be.onrender.com/api/v1/create-checkout-session", {
+					//       method:"POST",
+					//       headers:{
+					//         "Content-Type":"application/json"
+					//       },
+					//       mode:"cors",
+					//       body: JSON.stringify({
+					//         items:[
+					//           {id:id, quantity: state.count, price: price, name: title}
+					//         ]
+					//       })
+					//     })
+					//     .then(res => {
+					//       if (res.ok) return res.json()
+					//       return res.json().then(json => Promise.reject(json))
+					//     })
+					//     .then(({url})=>{
+					//       window.location = url
+					//     })
+					//     .catch(e => {
+					//       console.log(e.error)
+					//     })
+					//   });
 				},
 				prefill: {
 					name: `${data.me.firstName} ${data.me.lastName}`,
